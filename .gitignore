@@ -27,3 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# HF Spaces deploy
+hf-deploy/
