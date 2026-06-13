@@ -1,0 +1,19 @@
+# Render Blueprint — Railway Guardian AI Backend
+# https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    name: railguard-ai-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GROQ_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
