@@ -3,10 +3,11 @@ Railway Guardian AI — FastAPI Server
 Main entry point for the backend API.
 
 Endpoints:
-  POST /analyze     — Upload a frame for full detection + agent analysis
-  POST /simulate    — Run a simulation scenario (no real image needed)
-  GET  /health      — Health check
-  GET  /alerts      — Retrieve recent alerts from Supabase
+  POST /analyze       — Upload a frame for full detection + agent analysis
+  POST /analyze-video — Upload a video for multi-frame analysis
+  POST /simulate      — Run a simulation scenario (no real image needed)
+  GET  /health        — Health check
+  GET  /alerts        — Retrieve recent alerts from Supabase
 """
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
@@ -238,6 +239,151 @@ async def simulate_incident(request: SimulateRequest):
             logger.error(f"Supabase alert write failed: {e}")
 
     return {"status": "simulated", "alert": alert_row}
+
+
+@app.post("/analyze-video")
+async def analyze_video(
+    file: UploadFile = File(...),
+    camera_id: str = Query("CAM_001", description="Camera identifier"),
+    max_frames: int = Query(5, ge=1, le=20, description="Max frames to sample")
+):
+    """
+    Analyze a video file through the Guardian AI pipeline.
+    Extracts key frames at ~1fps, runs detection on each,
+    and returns the highest-risk analysis result.
+    """
+    import tempfile
+    import os
+
+    # Validate file type
+    if not file.filename.lower().endswith(('.mp4', '.avi', '.mov', '.mkv')):
+        raise HTTPException(status_code=400, detail="Unsupported video format. Use .mp4, .avi, .mov, or .mkv")
+
+    # Save uploaded video to a temp file
+    contents = await file.read()
+    tmp_path = os.path.join(tempfile.gettempdir(), f"guardian_{uuid.uuid4()}.mp4")
+    try:
+        with open(tmp_path, "wb") as f:
+            f.write(contents)
+
+        cap = cv2.VideoCapture(tmp_path)
+        if not cap.isOpened():
+            raise HTTPException(status_code=400, detail="Could not open video file")
+
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30
+        duration_sec = total_frames / fps if fps > 0 else 0
+
+        logger.info(
+            f"🎥 Video received: {file.filename} | "
+            f"{total_frames} frames, {fps:.1f}fps, {duration_sec:.1f}s"
+        )
+
+        # Sample frames evenly across the video (up to max_frames)
+        sample_count = min(max_frames, max(1, int(duration_sec)))
+        frame_indices = [
+            int(i * total_frames / sample_count) for i in range(sample_count)
+        ]
+
+        all_results = []
+        best_result = None
+        best_score = -1
+
+        for idx, frame_idx in enumerate(frame_indices):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                continue
+
+            logger.info(f"  📸 Analyzing frame {idx + 1}/{sample_count} (index {frame_idx})")
+
+            # Run detection
+            detections = run_detection(frame)
+            state = update_incident_state(camera_id, detections)
+            result = run_guardian(detections, state, camera_id)
+
+            frame_result = {
+                "frame_index": frame_idx,
+                "timestamp_sec": round(frame_idx / fps, 2) if fps > 0 else 0,
+                "risk_score": result["risk_score"],
+                "risk_level": result["risk_level"],
+                "incident_type": result["incident_type"],
+                "detections_summary": {
+                    "persons": detections["crowd_density"],
+                    "unattended_bags": len(detections["unattended_bags"]),
+                    "fallen_persons": len(detections["fallen_persons"]),
+                }
+            }
+            all_results.append(frame_result)
+
+            # Track the highest-risk frame
+            if result["risk_score"] > best_score:
+                best_score = result["risk_score"]
+                best_result = result
+                best_frame = frame
+
+        cap.release()
+
+        if best_result is None:
+            raise HTTPException(status_code=400, detail="No valid frames could be extracted from video")
+
+        # Upload the highest-risk frame to Supabase
+        frame_url = None
+        if best_score >= 5.0 and supabase:
+            try:
+                frame_bytes = encode_frame_to_bytes(best_frame)
+                filename = f"{camera_id}_video_{uuid.uuid4()}.jpg"
+                supabase.storage.from_("incident-frames").upload(
+                    filename, frame_bytes, {"content-type": "image/jpeg"}
+                )
+                frame_url = supabase.storage.from_("incident-frames").get_public_url(filename)
+            except Exception as e:
+                logger.error(f"Frame upload failed: {e}")
+
+        # Build the alert from the highest-risk frame
+        max_duration = max(
+            (v.get("duration_seconds", 0) for v in state.values()),
+            default=0
+        )
+        alert_row = {
+            "camera_id": camera_id,
+            "risk_score": best_result["risk_score"],
+            "risk_level": best_result["risk_level"],
+            "incident_type": best_result["incident_type"],
+            "agent_outputs": best_result["agent_outputs"],
+            "sop_clause": best_result.get("sop_clause"),
+            "sop_text": best_result.get("sop_text"),
+            "recommendation": best_result["recommendation"],
+            "frame_url": frame_url,
+            "duration_seconds": max_duration,
+            "resolved": False
+        }
+
+        if supabase:
+            try:
+                supabase.table("alerts").insert(alert_row).execute()
+            except Exception as e:
+                logger.error(f"Supabase alert write failed: {e}")
+
+        return {
+            "status": "video_analyzed",
+            "video_info": {
+                "filename": file.filename,
+                "total_frames": total_frames,
+                "fps": round(fps, 1),
+                "duration_seconds": round(duration_sec, 1),
+                "frames_analyzed": len(all_results),
+            },
+            "frame_results": all_results,
+            "alert": alert_row
+        }
+
+    finally:
+        # Clean up temp file
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
 
 
 @app.get("/health")

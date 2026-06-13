@@ -20,6 +20,7 @@ import RiskGauge from './components/RiskGauge'
 import SOPCard from './components/SOPCard'
 import AgentStatusRow from './components/AgentStatusRow'
 import SimulateButton from './components/SimulateButton'
+import InputCenter from './components/InputCenter'
 
 import { AnimatedStatusBadge } from './components/ui/AnimatedStatusBadge'
 import { NotificationCenter } from './components/ui/NotificationCenter'
@@ -149,6 +150,9 @@ export default function App() {
 
           {/* Agent Status */}
           <AgentStatusRow outputs={latestAlert?.agent_outputs} />
+
+          {/* Input Center */}
+          <InputCenter onResult={(alert) => pushAlert(alert)} />
         </div>
 
         {/* RIGHT COLUMN: SOP Recommendation Card */}
