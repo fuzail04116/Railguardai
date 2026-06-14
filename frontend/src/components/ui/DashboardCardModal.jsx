@@ -1,6 +1,7 @@
 /**
  * DashboardCardModal — Card with click-to-expand modal overlay.
- * Card displays summary content; clicking opens a full-detail modal with backdrop blur.
+ * Card displays summary content; clicking opens a full-detail modal.
+ * Warm light theme.
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -35,13 +36,8 @@ export function DashboardCardModal({ className, cardContent, modalTitle, modalCo
       {/* Card */}
       <div
         onClick={() => setIsOpen(true)}
-        className={`
-          cursor-pointer p-6
-          transition-all duration-300 ease-out
-          hover:shadow-xl hover:shadow-accent-cyan/5
-          hover:scale-[1.005]
-          ${className || 'bg-guardian-800 rounded-xl border border-guardian-700'}
-        `}
+        className={`cursor-pointer transition-all duration-200 ease-out hover:shadow-lg ${className || 'card'}`}
+        style={{ padding: 18 }}
       >
         {cardContent}
       </div>
@@ -53,28 +49,44 @@ export function DashboardCardModal({ className, cardContent, modalTitle, modalCo
           onClick={close}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-guardian-950/80 backdrop-blur-md animate-fade-in" />
+          <div className="absolute inset-0 animate-fade-in" style={{ background: 'rgba(28, 25, 23, 0.5)', backdropFilter: 'blur(8px)' }} />
 
           {/* Modal */}
           <div
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto glass-strong rounded-2xl shadow-2xl shadow-accent-cyan/10 animate-fade-in-scale"
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in-scale"
+            style={{
+              background: 'white', borderRadius: 14, border: '1px solid #DDD9D2',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-5 border-b border-guardian-700/50 bg-guardian-800/90 backdrop-blur-lg rounded-t-2xl">
-              <h2 className="text-sm font-bold tracking-wide text-guardian-200 uppercase">
+            <div style={{
+              position: 'sticky', top: 0, zIndex: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 20px', borderBottom: '1px solid #DDD9D2',
+              background: 'white', borderRadius: '14px 14px 0 0',
+            }}>
+              <h2 style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#1C1917', margin: 0 }}>
                 {modalTitle || 'Details'}
               </h2>
               <button
                 onClick={close}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-guardian-700/50 hover:bg-guardian-600/50 text-guardian-400 hover:text-white transition-colors text-lg"
+                style={{
+                  width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 6, border: '1px solid #DDD9D2', background: '#F7F4EF',
+                  color: '#6B6560', fontSize: 16, cursor: 'pointer',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.target.style.background = '#EFEDE8'}
+                onMouseLeave={e => e.target.style.background = '#F7F4EF'}
               >
                 ×
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-5">
+            <div style={{ padding: 20 }}>
               {modalContent}
             </div>
           </div>

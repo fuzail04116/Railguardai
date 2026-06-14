@@ -1,6 +1,7 @@
 /**
  * SimulateButton — Dropdown button with three demo scenario triggers.
  * Calls the backend /simulate endpoint for each scenario.
+ * Warm light theme — dark button, no neon.
  */
 
 import { useState, useRef, useEffect } from 'react'
@@ -76,7 +77,6 @@ export default function SimulateButton({ onResult }) {
       }
     } catch (err) {
       console.error('Simulation error:', err)
-      // Generate a local fallback alert for demo purposes
       const fallbackAlert = _generateFallbackAlert(scenarioData)
       onResult?.(fallbackAlert)
     } finally {
@@ -86,22 +86,26 @@ export default function SimulateButton({ onResult }) {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
         disabled={loading}
-        className={`
-          flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
-          transition-all duration-300
-          ${loading
-            ? 'bg-guardian-700 text-guardian-400 cursor-wait'
-            : 'bg-gradient-to-r from-accent-blue to-accent-cyan text-white hover:shadow-lg hover:shadow-accent-cyan/20 hover:scale-105 active:scale-95'
-          }
-        `}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '7px 14px', borderRadius: 8, border: 'none',
+          background: loading ? '#DDD9D2' : '#1C1917',
+          color: loading ? '#9C9690' : 'white',
+          fontSize: 11, fontWeight: 500, cursor: loading ? 'wait' : 'pointer',
+          transition: 'all 0.15s',
+        }}
       >
         {loading ? (
           <>
-            <div className="w-4 h-4 border-2 border-guardian-400 border-t-transparent rounded-full animate-spin" />
+            <div style={{
+              width: 12, height: 12, border: '2px solid #9C9690',
+              borderTopColor: 'transparent', borderRadius: '50%',
+              animation: 'pulse-dot 1s linear infinite',
+            }} />
             <span>Analyzing...</span>
           </>
         ) : (
@@ -114,9 +118,13 @@ export default function SimulateButton({ onResult }) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-64 glass-strong rounded-xl shadow-2xl shadow-guardian-950/50 z-20 overflow-hidden animate-fade-in-scale">
-          <div className="p-2 border-b border-guardian-700/50">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 px-2">
+        <div style={{
+          position: 'absolute', right: 0, marginTop: 6, width: 240,
+          background: 'white', border: '1px solid #DDD9D2', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.08)', zIndex: 20, overflow: 'hidden',
+        }} className="animate-fade-in-scale">
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #EFEDE8' }}>
+            <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9C9690' }}>
               Select Scenario
             </p>
           </div>
@@ -124,12 +132,18 @@ export default function SimulateButton({ onResult }) {
             <button
               key={s.scenario}
               onClick={() => simulate(s)}
-              className="w-full text-left px-4 py-3 transition-all duration-150 hover:bg-guardian-700/40 group"
+              style={{
+                width: '100%', textAlign: 'left', padding: '10px 14px',
+                border: 'none', background: 'transparent', cursor: 'pointer',
+                borderBottom: '1px solid #EFEDE8', transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.target.style.background = '#F7F4EF'}
+              onMouseLeave={e => e.target.style.background = 'transparent'}
             >
-              <p className="text-sm text-guardian-200 font-medium group-hover:text-white transition-colors">
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#1C1917', margin: 0 }}>
                 {s.label}
               </p>
-              <p className="text-[10px] text-guardian-500 mt-0.5">
+              <p style={{ fontSize: 10, color: '#9C9690', margin: '2px 0 0' }}>
                 {s.description}
               </p>
             </button>
@@ -141,10 +155,6 @@ export default function SimulateButton({ onResult }) {
 }
 
 
-/**
- * Generate a local fallback alert when the backend is unreachable.
- * This ensures the demo works even without the backend running.
- */
 function _generateFallbackAlert(scenarioData) {
   const now = new Date().toISOString()
   const scenarios = {

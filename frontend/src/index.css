@@ -1,86 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* --- Color System --- */
-  --color-guardian-950: #020617;
-  --color-guardian-900: #030712;
-  --color-guardian-800: #0f172a;
-  --color-guardian-700: #1e293b;
-  --color-guardian-600: #334155;
-  --color-guardian-500: #475569;
-  --color-guardian-400: #94a3b8;
-  --color-guardian-300: #cbd5e1;
-  --color-guardian-200: #e2e8f0;
+  /* --- New Warm Light Palette --- */
+  --color-page-bg: #F7F4EF;
+  --color-sidebar-bg: #1C1917;
+  --color-left-panel-bg: #EFEDE8;
+  --color-left-panel-border: #DDD9D2;
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #DDD9D2;
+  --color-inner-bg: #F7F4EF;
 
-  /* Risk Level Colors */
-  --color-risk-low: #10b981;
-  --color-risk-medium: #f59e0b;
-  --color-risk-high: #f97316;
-  --color-risk-critical: #ef4444;
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #6B6560;
+  --color-text-muted: #9C9690;
+  --color-divider: #DDD9D2;
+  --color-divider-faint: #EFEDE8;
 
-  /* Accent Colors */
-  --color-accent-cyan: #06b6d4;
-  --color-accent-blue: #3b82f6;
-  --color-accent-purple: #8b5cf6;
-  --color-accent-emerald: #10b981;
+  --color-accent-red: #C0392B;
+  --color-accent-orange: #E67E22;
+  --color-accent-green: #27AE60;
+  --color-accent-blue: #185FA5;
+  --color-accent-blue-bg: #E6F1FB;
 
-  /* Glow Colors (semi-transparent) */
-  --color-glow-cyan: rgba(6, 182, 212, 0.15);
-  --color-glow-red: rgba(239, 68, 68, 0.2);
-  --color-glow-amber: rgba(245, 158, 11, 0.15);
-  --color-glow-emerald: rgba(16, 185, 129, 0.15);
+  --color-dark-block: #1C1917;
+  --color-dark-block-muted: #2E2A27;
 
-  /* Typography */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Keep old tokens for backward compat but map to new */
+  --color-guardian-950: #1C1917;
+  --color-guardian-900: #1C1917;
+  --color-guardian-800: #2E2A27;
+  --color-guardian-700: #DDD9D2;
+  --color-guardian-600: #9C9690;
+  --color-guardian-500: #9C9690;
+  --color-guardian-400: #6B6560;
+  --color-guardian-300: #6B6560;
+  --color-guardian-200: #1C1917;
+
+  --color-risk-low: #27AE60;
+  --color-risk-medium: #E67E22;
+  --color-risk-high: #C0392B;
+  --color-risk-critical: #C0392B;
+
+  --color-accent-cyan: #185FA5;
+  --color-accent-blue: #185FA5;
+  --color-accent-purple: #185FA5;
+  --color-accent-emerald: #27AE60;
+
+  --color-glow-cyan: rgba(24, 95, 165, 0.08);
+  --color-glow-red: rgba(192, 57, 43, 0.08);
+  --color-glow-amber: rgba(230, 126, 34, 0.08);
+  --color-glow-emerald: rgba(39, 174, 96, 0.08);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'DM Serif Display', Georgia, serif;
+  --font-mono: 'SF Mono', ui-monospace, monospace;
 }
 
 /* --- Base Styles --- */
 body {
   margin: 0;
   padding: 0;
-  background: var(--color-guardian-950);
-  color: #e2e8f0;
+  background: var(--color-page-bg);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: 100vh;
 }
 
-/* Subtle grid background pattern */
+/* Remove grid background */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 #root {
   position: relative;
   z-index: 1;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* --- Custom Scrollbar --- */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-guardian-900);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-guardian-600);
-  border-radius: 3px;
+  background: var(--color-divider);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-guardian-500);
+  background: var(--color-text-muted);
 }
 
 /* --- Animations --- */
@@ -100,12 +117,12 @@ body::before {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in-scale {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -116,12 +133,12 @@ body::before {
 
 @keyframes pulse-dot {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
+  50% { transform: scale(1.4); opacity: 0.5; }
 }
 
 @keyframes border-glow {
-  0%, 100% { border-color: rgba(239, 68, 68, 0.6); }
-  50% { border-color: rgba(239, 68, 68, 1); }
+  0%, 100% { border-color: rgba(192, 57, 43, 0.4); }
+  50% { border-color: rgba(192, 57, 43, 0.8); }
 }
 
 @keyframes scan-line {
@@ -131,17 +148,14 @@ body::before {
 
 /* --- Utility Classes --- */
 .glass {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
 }
 
 .glass-strong {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 
 .animate-slide-in {
@@ -149,11 +163,11 @@ body::before {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out;
+  animation: fade-in 0.3s ease-out;
 }
 
 .animate-fade-in-scale {
-  animation: fade-in-scale 0.3s ease-out;
+  animation: fade-in-scale 0.2s ease-out;
 }
 
 .animate-pulse-dot {
@@ -165,11 +179,13 @@ body::before {
 }
 
 .text-glow-cyan {
-  text-shadow: 0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(6, 182, 212, 0.3);
+  text-shadow: none;
+  color: var(--color-accent-red);
 }
 
 .text-glow-red {
-  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+  text-shadow: none;
+  color: var(--color-accent-red);
 }
 
 /* Risk level border utilities */
@@ -178,39 +194,39 @@ body::before {
 .border-risk-high { border-color: var(--color-risk-high); }
 .border-risk-critical {
   border-color: var(--color-risk-critical);
-  animation: border-glow 1.5s ease-in-out infinite;
 }
 
-/* Gradient border effect */
-.gradient-border {
-  position: relative;
-}
-
+/* Gradient border effect — disabled in light theme */
 .gradient-border::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.1));
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  pointer-events: none;
+  display: none;
 }
 
-/* Scan line effect for critical state */
-.scan-effect {
-  position: relative;
-  overflow: hidden;
-}
-
+/* Scan line effect — disabled */
 .scan-effect::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), transparent);
-  animation: scan-line 3s linear infinite;
+  display: none;
+}
+
+/* --- New Warm Theme Utilities --- */
+.eyebrow {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 10px;
+}
+
+.inner-block {
+  background: var(--color-inner-bg);
+  border-radius: 8px;
+  padding: 11px;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
 }

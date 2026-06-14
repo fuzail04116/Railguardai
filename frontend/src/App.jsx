@@ -1,20 +1,4 @@
-/**
- * Railway Guardian AI — Main Dashboard
- * Multi-Agent Safety Command Center for Indian Railways
- *
- * Layout:
- * ┌─────────────────────────────────────────────────────────┐
- * │  Header: Title + Status Badge + Simulate Button         │
- * ├─────────────────────────────────────────────────────────┤
- * │  Stats Row: Risk Score | Active Incidents | Critical     │
- * ├──────────────┬──────────────────────────────────────────┤
- * │  Risk Gauge  │  SOP Recommendation Card (expandable)    │
- * │  Agent Status│                                          │
- * ├──────────────┼──────────────────────────────────────────┤
- * │  Live Alerts │  Incident History Table                   │
- * └──────────────┴──────────────────────────────────────────┘
- */
-
+import { useState } from 'react'
 import { useAlerts } from './hooks/useAlerts'
 import RiskGauge from './components/RiskGauge'
 import SOPCard from './components/SOPCard'
@@ -28,7 +12,6 @@ import { StatisticsCard } from './components/ui/StatisticsCard'
 import { TableComponent } from './components/ui/TableComponent'
 import { Toast } from './components/ui/Toast'
 
-/* Camera → Platform mapping */
 const PLATFORM_MAP = {
   'CAM_001': 'Platform 1',
   'CAM_002': 'Platform 2',
@@ -37,10 +20,18 @@ const PLATFORM_MAP = {
 }
 const getPlatform = (camId) => PLATFORM_MAP[camId] || `Platform ${camId?.slice(-1) || '?'}`
 
+/* Nav icons as simple SVG-ish text */
+const NAV_ITEMS = [
+  { id: 'monitor', icon: '◫', label: 'Monitor' },
+  { id: 'history', icon: '◷', label: 'History' },
+  { id: 'analyze', icon: '△', label: 'Analyze' },
+  { id: 'log', icon: '☰', label: 'Log' },
+]
+
 export default function App() {
   const { alerts, latestAlert, toastQueue, dismissToast, pushAlert, isConnected } = useAlerts()
+  const [activeTab, setActiveTab] = useState('monitor')
 
-  // Derived stats
   const badgeState = latestAlert?.risk_level ?? 'low'
   const activeIncidents = alerts.filter(a => !a.resolved).length
   const criticalCount = alerts.filter(a => a.risk_level === 'critical' || a.risk_level === 'high').length
@@ -48,9 +39,16 @@ export default function App() {
     ? (alerts.slice(0, 10).reduce((s, a) => s + (a.risk_score || 0), 0) / Math.min(alerts.length, 10)).toFixed(1)
     : '0.0'
 
+  const riskColor = badgeState === 'critical' || badgeState === 'high' ? '#C0392B'
+    : badgeState === 'medium' ? '#E67E22' : '#27AE60'
+
+  const incidentTitle = latestAlert
+    ? `${(latestAlert.incident_type || 'Monitoring').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} — ${getPlatform(latestAlert.camera_id)}`
+    : 'All Clear — Monitoring'
+
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      {/* ── Toast Layer ── */}
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#F7F4EF' }}>
+      {/* Toast Layer */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2.5">
         {toastQueue.map(t => (
           <Toast
@@ -63,178 +61,316 @@ export default function App() {
         ))}
       </div>
 
-      {/* ── Header ── */}
-      <header className="flex items-center justify-between mb-6 animate-fade-in">
-        <div className="flex items-center gap-4">
-          {/* Logo mark */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-cyan to-accent-blue flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-accent-cyan/20">
-            🛡️
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
-              Railway Guardian <span className="text-glow-cyan text-accent-cyan">AI</span>
-            </h1>
-            <div className="flex items-center gap-3 mt-0.5">
-              <p className="text-guardian-500 text-[11px] font-medium tracking-wide">
-                Multi-Agent Safety Command Center
-              </p>
-              <span className="text-guardian-700">·</span>
-              <div className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse-dot' : 'bg-guardian-600'}`} />
-                <span className={`text-[10px] font-mono ${isConnected ? 'text-emerald-500' : 'text-guardian-600'}`}>
-                  {isConnected ? 'LIVE' : 'OFFLINE'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* ═══ ICON SIDEBAR (52px) ═══ */}
+      <div style={{
+        width: 52, minWidth: 52, background: '#1C1917',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        paddingTop: 14, paddingBottom: 14, gap: 4,
+      }}>
+        {/* Logo */}
+        <div style={{
+          width: 28, height: 28, borderRadius: 7, background: '#C0392B',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white', fontSize: 14, marginBottom: 16,
+        }}>🛡</div>
 
-        <div className="flex items-center gap-3">
-          <AnimatedStatusBadge
-            status={badgeState}
-            label={`Risk: ${badgeState.toUpperCase()}`}
-            camera={latestAlert?.camera_id ?? 'No data'}
-          />
-          <SimulateButton onResult={(alert) => pushAlert(alert)} />
-        </div>
-      </header>
+        {/* Nav icons */}
+        {NAV_ITEMS.map(nav => (
+          <button
+            key={nav.id}
+            onClick={() => setActiveTab(nav.id)}
+            title={nav.label}
+            style={{
+              width: 34, height: 34, borderRadius: 8, border: 'none',
+              background: activeTab === nav.id ? '#2E2A27' : 'transparent',
+              color: activeTab === nav.id ? '#F7F4EF' : '#6B6560',
+              fontSize: 16, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >{nav.icon}</button>
+        ))}
 
-      {/* ── Stats Row ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <StatisticsCard
-          label="Current Risk Score"
-          value={latestAlert?.risk_score?.toFixed(1) ?? '—'}
-          suffix="/ 10"
-          trend={latestAlert?.risk_score > 5 ? 'up' : 'neutral'}
-          color={latestAlert?.risk_level}
-        />
-        <StatisticsCard
-          label="Active Incidents"
-          value={activeIncidents}
-          suffix="open"
-          trend={activeIncidents > 3 ? 'up' : 'neutral'}
-          color={activeIncidents > 5 ? 'high' : undefined}
-        />
-        <StatisticsCard
-          label="High+ Alerts"
-          value={criticalCount}
-          suffix="total"
-          trend={criticalCount > 0 ? 'up' : 'neutral'}
-          color={criticalCount > 0 ? 'critical' : undefined}
-        />
+        <div style={{ flex: 1 }} />
+        {/* Settings icon at bottom */}
+        <button style={{
+          width: 34, height: 34, borderRadius: 8, border: 'none',
+          background: 'transparent', color: '#6B6560', fontSize: 14,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>⚙</button>
       </div>
 
-      {/* ── Main Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ═══ LEFT PANEL (200px) ═══ */}
+      <div style={{
+        width: 200, minWidth: 200, background: '#EFEDE8',
+        borderRight: '1px solid #DDD9D2', padding: '18px 14px',
+        display: 'flex', flexDirection: 'column', gap: 14,
+        overflowY: 'auto',
+      }}>
+        {/* Wordmark */}
+        <div style={{ marginBottom: 4 }}>
+          <p style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 15, lineHeight: 1.2, color: '#1C1917', margin: 0 }}>
+            Railway<br />Guardian <span style={{ color: '#C0392B' }}>AI</span>
+          </p>
+          <p style={{ fontSize: 10, color: '#9C9690', marginTop: 4, letterSpacing: '0.02em' }}>
+            Safety Command · Indian Railways
+          </p>
+        </div>
 
-        {/* LEFT COLUMN: Risk Gauge + Agent Status */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          {/* Risk Gauge */}
-          <div className="glass rounded-xl p-6 border border-guardian-700/30 gradient-border">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-4">
-              Overall Risk Assessment
-            </p>
-            <RiskGauge
-              score={latestAlert?.risk_score ?? 0}
-              level={latestAlert?.risk_level ?? 'low'}
-            />
-            {latestAlert && (
-              <div className="mt-4 pt-3 border-t border-guardian-700/30">
-                <div className="flex justify-between text-[10px] text-guardian-500 font-mono">
-                  <span>Avg (last 10): {avgRisk}</span>
-                  <span>{new Date(latestAlert.created_at).toLocaleTimeString()}</span>
+        {/* Risk Score Block */}
+        <div style={{
+          background: '#1C1917', borderRadius: 10, padding: 14,
+        }}>
+          <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B6560', marginBottom: 8 }}>Risk Score</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 52, color: 'white', lineHeight: 0.9 }}>
+              {latestAlert?.risk_score?.toFixed(1) ?? '0.0'}
+            </span>
+            <span style={{ fontSize: 13, color: '#6B6560' }}>/10</span>
+          </div>
+
+          {/* Dot segments */}
+          <div style={{ display: 'flex', gap: 3, marginTop: 10 }}>
+            {Array.from({ length: 10 }, (_, i) => (
+              <div key={i} style={{
+                flex: 1, height: 4, borderRadius: 2,
+                background: i < Math.round(latestAlert?.risk_score ?? 0) ? riskColor : '#2E2A27',
+                transition: 'background 0.3s',
+              }} />
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: riskColor, textTransform: 'capitalize' }}>
+              {badgeState}
+            </span>
+            <span style={{ fontSize: 9, color: '#6B6560' }}>Avg 10: {avgRisk}</span>
+          </div>
+        </div>
+
+        {/* Agent Status */}
+        <AgentStatusRow outputs={latestAlert?.agent_outputs} />
+
+        {/* Camera pills */}
+        <div>
+          <p className="eyebrow" style={{ marginBottom: 6, marginTop: 4 }}>Cameras</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {Object.entries(PLATFORM_MAP).map(([cam, plat]) => {
+              const camAlert = alerts.find(a => a.camera_id === cam && !a.resolved)
+              const levelColor = camAlert?.risk_level === 'high' || camAlert?.risk_level === 'critical' ? '#C0392B'
+                : camAlert?.risk_level === 'medium' ? '#E67E22' : '#27AE60'
+              return (
+                <div key={cam} style={{
+                  fontSize: 10, background: 'white', border: '1px solid #DDD9D2',
+                  borderRadius: 20, padding: '3px 8px',
+                  color: '#6B6560', display: 'flex', alignItems: 'center', gap: 4,
+                }}>
+                  {cam.slice(-3)}
+                  <span style={{ fontWeight: 600, color: levelColor, fontSize: 9 }}>
+                    {camAlert?.risk_level?.slice(0, 3).toUpperCase() || 'OK'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ MAIN AREA ═══ */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Topbar */}
+        <div style={{
+          padding: '14px 20px', borderBottom: '1px solid #DDD9D2',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'white', flexShrink: 0,
+        }}>
+          <div>
+            <h1 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 22, color: '#1C1917', margin: 0 }}>
+              {incidentTitle}
+            </h1>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              {latestAlert && (
+                <>
+                  <span style={{ fontSize: 10, background: '#EFEDE8', color: '#6B6560', padding: '2px 8px', borderRadius: 4 }}>
+                    {latestAlert.camera_id}
+                  </span>
+                  <span style={{ fontSize: 10, background: '#EFEDE8', color: '#6B6560', padding: '2px 8px', borderRadius: 4 }}>
+                    {getPlatform(latestAlert.camera_id)}
+                  </span>
+                  {latestAlert.duration_seconds > 0 && (
+                    <span style={{ fontSize: 10, background: '#EFEDE8', color: '#6B6560', padding: '2px 8px', borderRadius: 4 }}>
+                      {latestAlert.duration_seconds}s duration
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Live badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: isConnected ? '#EAF3DE' : '#EFEDE8',
+              padding: '4px 10px', borderRadius: 20, fontSize: 11,
+              color: isConnected ? '#3B6D11' : '#9C9690', fontWeight: 500,
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: isConnected ? '#27AE60' : '#9C9690',
+              }} className={isConnected ? 'animate-pulse-dot' : ''} />
+              {isConnected ? 'Live' : 'Offline'}
+            </div>
+            <SimulateButton onResult={(alert) => pushAlert(alert)} />
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+
+          {/* ── MONITOR TAB ── */}
+          {activeTab === 'monitor' && (
+            <div style={{ display: 'flex', gap: 16, height: '100%' }}>
+              {/* Left content */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <SOPCard alert={latestAlert} />
+              </div>
+
+              {/* Right sidebar (220px) */}
+              <div style={{ width: 220, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Active incidents */}
+                <div className="card" style={{ padding: 14 }}>
+                  <p className="eyebrow" style={{ marginBottom: 6 }}>Active Incidents</p>
+                  <p style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 32, color: '#C0392B', margin: 0, lineHeight: 1 }}>
+                    {activeIncidents}
+                  </p>
+                  <p style={{ fontSize: 10, color: '#9C9690', marginTop: 4 }}>
+                    {criticalCount} High+ this session
+                  </p>
+                </div>
+
+                {/* Temporal escalation */}
+                <div style={{ background: '#1C1917', borderRadius: 10, padding: 14 }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B6560', marginBottom: 8 }}>
+                    Temporal Escalation
+                  </p>
+                  <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+                    <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#27AE60' }} />
+                    <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#E67E22' }} />
+                    <div style={{ flex: 2, height: 6, borderRadius: 3, background: latestAlert?.duration_seconds > 120 ? '#C0392B' : '#2E2A27' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#6B6560' }}>
+                    <span>New</span><span>Persistent</span><span>Critical</span>
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: '#C0392B' }}>
+                      {latestAlert?.duration_seconds ?? 0}s
+                    </span>
+                    <span style={{ fontSize: 10, color: '#6B6560', marginLeft: 6 }}>
+                      {latestAlert?.duration_seconds > 120 ? 'Critical' : latestAlert?.duration_seconds > 30 ? 'Persistent' : 'New'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live alerts feed */}
+                <div className="card" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <NotificationCenter
+                    cardTitle="Live Alerts"
+                    cardDescription=""
+                    notifications={alerts.slice(0, 10).map(a => ({
+                      id: a.id,
+                      title: `${a.incident_type?.toUpperCase()} · ${getPlatform(a.camera_id)}`,
+                      description: `${a.recommendation?.slice(0, 50) || ''}...`,
+                      time: new Date(a.created_at).toLocaleTimeString(),
+                      variant: a.risk_level,
+                    }))}
+                  />
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Agent Status */}
-          <AgentStatusRow outputs={latestAlert?.agent_outputs} />
-
-          {/* Input Center */}
-          <InputCenter onResult={(alert) => pushAlert(alert)} />
-        </div>
-
-        {/* RIGHT COLUMN: SOP Recommendation Card */}
-        <div className="lg:col-span-2">
-          <SOPCard alert={latestAlert} />
-        </div>
-
-        {/* BOTTOM LEFT: Live Alert Feed */}
-        <div className="lg:col-span-1 glass rounded-xl border border-guardian-700/30 overflow-hidden">
-          <NotificationCenter
-            cardTitle="Live Alerts"
-            cardDescription="Supabase Realtime — updates without refresh"
-            notifications={alerts.slice(0, 15).map(a => ({
-              id: a.id,
-              title: `${a.incident_type?.toUpperCase()} · ${getPlatform(a.camera_id)}`,
-              description: `[${a.camera_id}] ${a.recommendation?.slice(0, 60) || ''}...`,
-              time: new Date(a.created_at).toLocaleTimeString(),
-              variant: a.risk_level,
-            }))}
-          />
-        </div>
-
-        {/* BOTTOM RIGHT: Incident History Table */}
-        <div className="lg:col-span-2 glass rounded-xl border border-guardian-700/30 overflow-hidden">
-          <div className="p-4 border-b border-guardian-700/30">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500">
-                  Incident History
-                </p>
-                <p className="text-[10px] text-guardian-600 mt-0.5">
-                  Duration column confirms temporal escalation is active
-                </p>
-              </div>
-              <span className="text-[10px] font-mono text-guardian-600">
-                {alerts.length} records
-              </span>
             </div>
-          </div>
-          <TableComponent
-            columns={[
-              {
-                key: 'created_at',
-                label: 'Time',
-                render: v => v ? new Date(v).toLocaleTimeString() : '—'
-              },
-              {
-                id: 'platform',
-                key: 'camera_id',
-                label: 'Platform',
-                render: (v) => getPlatform(v)
-              },
-              { key: 'camera_id', label: 'Camera' },
-              { key: 'incident_type', label: 'Type' },
-              { key: 'risk_level', label: 'Level' },
-              {
-                key: 'risk_score',
-                label: 'Score',
-                render: v => v?.toFixed(1) ?? '—'
-              },
-              {
-                key: 'duration_seconds',
-                label: 'Duration',
-                render: v => v != null ? `${v}s` : '—'
-              },
-              {
-                key: 'sop_clause',
-                label: 'SOP Cited',
-                render: v => v || '—'
-              },
-            ]}
-            rows={alerts}
-          />
+          )}
+
+          {/* ── HISTORY TAB ── */}
+          {activeTab === 'history' && (
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: 14, borderBottom: '1px solid #DDD9D2' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p className="eyebrow">Incident History</p>
+                    <p style={{ fontSize: 10, color: '#9C9690', marginTop: 2 }}>Duration column confirms temporal escalation</p>
+                  </div>
+                  <span style={{ fontSize: 10, color: '#9C9690' }}>{alerts.length} records</span>
+                </div>
+              </div>
+              <TableComponent
+                columns={[
+                  { key: 'created_at', label: 'Time', render: v => v ? new Date(v).toLocaleTimeString() : '—' },
+                  { id: 'platform', key: 'camera_id', label: 'Platform', render: (v) => getPlatform(v) },
+                  { key: 'camera_id', label: 'Camera' },
+                  { key: 'incident_type', label: 'Type' },
+                  { key: 'risk_level', label: 'Level' },
+                  { key: 'risk_score', label: 'Score', render: v => v?.toFixed(1) ?? '—' },
+                  { key: 'duration_seconds', label: 'Duration', render: v => v != null ? `${v}s` : '—' },
+                  { key: 'sop_clause', label: 'SOP Cited', render: v => v || '—' },
+                ]}
+                rows={alerts}
+              />
+            </div>
+          )}
+
+          {/* ── ANALYZE TAB ── */}
+          {activeTab === 'analyze' && (
+            <div style={{ maxWidth: 600 }}>
+              <InputCenter onResult={(alert) => pushAlert(alert)} />
+            </div>
+          )}
+
+          {/* ── LOG TAB ── */}
+          {activeTab === 'log' && (
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div className="card" style={{ flex: 1, overflow: 'hidden' }}>
+                <NotificationCenter
+                  cardTitle="Full Incident Log"
+                  cardDescription="Complete alert feed from Supabase realtime"
+                  notifications={alerts.map(a => ({
+                    id: a.id,
+                    title: `${a.incident_type?.toUpperCase()} · ${getPlatform(a.camera_id)}`,
+                    description: `[${a.camera_id}] ${a.recommendation?.slice(0, 80) || ''}...`,
+                    time: new Date(a.created_at).toLocaleTimeString(),
+                    variant: a.risk_level,
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom nav tabs */}
+        <div style={{
+          padding: '6px 20px', borderTop: '1px solid #DDD9D2',
+          display: 'flex', gap: 4, background: '#F7F4EF', flexShrink: 0,
+        }}>
+          {[{ id: 'monitor', icon: '◫', label: 'Monitor' }, { id: 'history', icon: '◷', label: 'History' },
+            { id: 'analyze', icon: '△', label: 'Analyze' }, { id: 'log', icon: '☰', label: 'Incident Log' }].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                fontSize: 11, fontWeight: activeTab === tab.id ? 500 : 400,
+                padding: '7px 14px', borderRadius: 6, border: 'none',
+                background: activeTab === tab.id ? 'white' : 'transparent',
+                boxShadow: activeTab === tab.id ? '0 0 0 1px #DDD9D2' : 'none',
+                color: activeTab === tab.id ? '#1C1917' : '#9C9690',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                transition: 'all 0.15s',
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
-
-      {/* ── Footer ── */}
-      <footer className="mt-8 pt-4 border-t border-guardian-800/30 text-center">
-        <p className="text-[10px] text-guardian-700 font-mono">
-          Railway Guardian AI v1.0 · Multi-Agent Safety Command Center · Indian Railways
-        </p>
-      </footer>
     </div>
   )
 }

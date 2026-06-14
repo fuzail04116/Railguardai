@@ -1,14 +1,9 @@
 /**
  * SOPCard — Enhanced Guardian AI Analytics Card
+ * Warm light theme redesign.
  * 
- * Card face: Risk summary + recommendation + platform info
- * Modal: Full incident report with:
- *   - Risk score visualization with gradient bar
- *   - Platform & camera identification
- *   - SOP clause with compliance checklist
- *   - Agent analysis with visual progress bars
- *   - Escalation timeline
- *   - Recommended response actions
+ * Card face: Guardian recommendation + SOP + agent breakdown
+ * Modal: Full incident report (styling updated, logic unchanged)
  */
 
 import { DashboardCardModal } from './ui/DashboardCardModal'
@@ -69,35 +64,13 @@ const SOP_ACTIONS = {
   ],
 }
 
-/* ── Style Constants ── */
-const BORDER_COLORS = {
-  low: 'border-emerald-500/30',
-  medium: 'border-amber-500/40',
-  high: 'border-orange-500/50',
-  critical: 'border-red-500/60 animate-border-glow',
-}
-
-const LEVEL_BADGES = {
-  low: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  high: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-  critical: 'bg-red-500/15 text-red-400 border-red-500/30',
-}
-
-const SCORE_COLORS = {
-  low: { bar: 'bg-emerald-500', text: 'text-emerald-400', glow: 'shadow-emerald-500/30' },
-  medium: { bar: 'bg-amber-500', text: 'text-amber-400', glow: 'shadow-amber-500/30' },
-  high: { bar: 'bg-orange-500', text: 'text-orange-400', glow: 'shadow-orange-500/30' },
-  critical: { bar: 'bg-red-500', text: 'text-red-400', glow: 'shadow-red-500/30' },
-}
-
+/* ── Warm Theme Style Constants ── */
 const AGENT_CONFIG = {
-  crowd: { icon: '👥', label: 'Crowd Intelligence', color: 'bg-cyan-500', textColor: 'text-cyan-400', weight: '1.0×' },
-  security: { icon: '🔒', label: 'Security Threat', color: 'bg-orange-500', textColor: 'text-orange-400', weight: '2.0×' },
-  distress: { icon: '🚨', label: 'Passenger Welfare', color: 'bg-red-500', textColor: 'text-red-400', weight: '1.5×' },
+  crowd: { icon: '👥', label: 'Crowd', color: '#185FA5', weight: '1.0×' },
+  security: { icon: '🔒', label: 'Security', color: '#E67E22', weight: '2.0×' },
+  distress: { icon: '🚨', label: 'Distress', color: '#C0392B', weight: '1.5×' },
 }
 
-/* ── Helper: Get risk level from score ── */
 function getRiskLevel(score) {
   if (score >= 8) return 'critical'
   if (score >= 6) return 'high'
@@ -105,7 +78,6 @@ function getRiskLevel(score) {
   return 'low'
 }
 
-/* ── Helper: Format duration ── */
 function formatDuration(seconds) {
   if (!seconds || seconds === 0) return 'Just now'
   if (seconds < 60) return `${seconds}s`
@@ -114,30 +86,29 @@ function formatDuration(seconds) {
   return `${mins}m ${secs}s`
 }
 
-/* ── Helper: Get escalation label ── */
 function getEscalationInfo(seconds, riskLevel) {
-  if (!seconds || seconds === 0) return { level: 0, label: 'New', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-  if (seconds < 30) return { level: 0, label: 'New', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-  if (seconds <= 120) return { level: 1, label: 'Persistent', color: 'text-amber-400', bg: 'bg-amber-500/10' }
-  // Escalation level 2 — but only show "Critical Duration" if risk is medium or above
-  if (riskLevel === 'low') {
-    return { level: 2, label: 'Persistent', color: 'text-amber-400', bg: 'bg-amber-500/10' }
-  }
-  return { level: 2, label: 'Critical Duration', color: 'text-red-400', bg: 'bg-red-500/10' }
+  if (!seconds || seconds === 0) return { level: 0, label: 'New', color: '#27AE60' }
+  if (seconds < 30) return { level: 0, label: 'New', color: '#27AE60' }
+  if (seconds <= 120) return { level: 1, label: 'Persistent', color: '#E67E22' }
+  if (riskLevel === 'low') return { level: 2, label: 'Persistent', color: '#E67E22' }
+  return { level: 2, label: 'Critical Duration', color: '#C0392B' }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════ */
+function getScoreColor(score) {
+  if (score >= 6) return '#C0392B'
+  if (score >= 4) return '#E67E22'
+  return '#27AE60'
+}
+
 
 export default function SOPCard({ alert }) {
   if (!alert) {
     return (
-      <div className="glass rounded-xl border border-guardian-700/30 h-full flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="text-4xl mb-3 opacity-20">🛡️</div>
-          <p className="text-guardian-500 text-sm font-medium">Awaiting first incident detection...</p>
-          <p className="text-guardian-600 text-[11px] mt-2">
+      <div className="card" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 10, opacity: 0.15 }}>🛡️</div>
+          <p style={{ color: '#9C9690', fontSize: 13, fontWeight: 500 }}>Awaiting first incident detection...</p>
+          <p style={{ color: '#9C9690', fontSize: 11, marginTop: 6 }}>
             The Guardian AI will analyze threats and recommend actions here
           </p>
         </div>
@@ -145,315 +116,238 @@ export default function SOPCard({ alert }) {
     )
   }
 
-  const borderColor = BORDER_COLORS[alert.risk_level] || BORDER_COLORS.low
-  const levelBadge = LEVEL_BADGES[alert.risk_level] || LEVEL_BADGES.low
-  const scoreColor = SCORE_COLORS[alert.risk_level] || SCORE_COLORS.low
   const platformInfo = getPlatformInfo(alert.camera_id)
   const escalation = getEscalationInfo(alert.duration_seconds, alert.risk_level)
 
-  /* ── CARD FACE (collapsed) ── */
+  /* ── CARD FACE ── */
   const cardFace = (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="text-lg">🛡️</div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-400">
-            Guardian Recommendation
+      {/* Eyebrow row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <p className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 12 }}>🛡️</span> Guardian Recommendation
+        </p>
+        {alert.sop_clause && (
+          <span style={{
+            fontFamily: "'SF Mono', ui-monospace, monospace", fontSize: 10, fontWeight: 600,
+            background: '#E6F1FB', color: '#185FA5', padding: '3px 8px', borderRadius: 4,
+          }}>
+            {alert.sop_clause}
+          </span>
+        )}
+      </div>
+
+      {/* Recommendation text with left border */}
+      <div style={{ borderLeft: '3px solid #C0392B', paddingLeft: 12, marginBottom: 14 }}>
+        <p style={{ fontSize: 13, color: '#1C1917', lineHeight: 1.7, margin: 0 }}>
+          {alert.recommendation}
+        </p>
+      </div>
+
+      {/* SOP reference block */}
+      {alert.sop_text && (
+        <div className="inner-block" style={{ marginBottom: 14 }}>
+          <p className="eyebrow" style={{ marginBottom: 4 }}>SOP Reference</p>
+          <p style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.6, margin: 0 }}>
+            {alert.sop_text}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {alert.sop_clause && (
-            <span className="text-[10px] font-mono font-semibold bg-accent-blue/15 text-accent-blue border border-accent-blue/30 px-2 py-1 rounded-md">
-              {alert.sop_clause}
-            </span>
-          )}
-          <span className={`text-[10px] font-semibold uppercase border px-2 py-1 rounded-md ${levelBadge}`}>
-            {alert.risk_level}
-          </span>
-        </div>
-      </div>
+      )}
 
-      {/* Platform + Camera badge */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] font-mono bg-guardian-700/50 text-guardian-300 px-2 py-1 rounded border border-guardian-600/30">
-          🚉 {platformInfo.platform}
-        </span>
-        <span className="text-[10px] font-mono bg-guardian-700/50 text-guardian-300 px-2 py-1 rounded border border-guardian-600/30">
-          📷 {alert.camera_id}
-        </span>
-        <span className="text-[10px] font-mono bg-guardian-700/50 text-guardian-300 px-2 py-1 rounded border border-guardian-600/30">
-          📍 {platformInfo.zone}
-        </span>
-      </div>
-
-      {/* Recommendation text */}
-      <p className="text-guardian-200 text-sm leading-relaxed mb-4">
-        {alert.recommendation}
-      </p>
-
-      {/* Mini agent scores bar */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* Agent breakdown — 3 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         {['crowd', 'security', 'distress'].map(k => {
           const data = alert.agent_outputs?.[k]
           const score = data?.risk_score ?? 0
           const cfg = AGENT_CONFIG[k]
+          const scoreColor = getScoreColor(score)
+
           return (
-            <div key={k} className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] uppercase tracking-wider text-guardian-500">{cfg.icon} {k}</span>
-                <span className="text-[10px] font-mono font-bold text-guardian-300">{score.toFixed(1)}</span>
+            <div key={k} className="inner-block" style={{ padding: 10 }}>
+              <p className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                <span style={{ fontSize: 11 }}>{cfg.icon}</span> {cfg.label}
+              </p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                <span style={{ fontSize: 24, fontWeight: 600, color: scoreColor }}>{score.toFixed(1)}</span>
+                <span style={{ fontSize: 10, color: '#9C9690' }}>/10</span>
               </div>
-              <div className="h-1.5 bg-guardian-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${cfg.color} transition-all duration-700 ease-out`}
-                  style={{ width: `${Math.min(score * 10, 100)}%` }}
-                />
+              <p style={{ fontSize: 10, color: '#9C9690', margin: '3px 0 5px' }}>
+                {data?.escalation ? 'Escalating' : 'Clear'}
+              </p>
+              <div style={{ height: 3, borderRadius: 2, background: '#EFEDE8', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 2, width: `${Math.min(score * 10, 100)}%`,
+                  background: scoreColor, transition: 'width 0.5s ease',
+                }} />
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Metadata row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-[10px] text-guardian-500 font-mono">
+      {/* Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+        <div style={{ display: 'flex', gap: 12, fontSize: 10, color: '#9C9690' }}>
           <span>⏱ {formatDuration(alert.duration_seconds)}</span>
           <span>📊 {alert.risk_score?.toFixed(1)}/10</span>
-          <span className={`${escalation.color}`}>● {escalation.label}</span>
+          <span style={{ color: escalation.color }}>● {escalation.label}</span>
         </div>
-        <p className="text-accent-cyan text-[10px] flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-          <span>View full report</span>
-          <span className="transition-transform group-hover:translate-x-1">→</span>
+        <p style={{ fontSize: 10, color: '#185FA5', display: 'flex', alignItems: 'center', gap: 3 }}>
+          View full report <span>→</span>
         </p>
       </div>
     </div>
   )
 
-  /* ── MODAL BODY (expanded) ── */
+  /* ── MODAL BODY ── */
   const modalBody = (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── Section 1: Incident Overview ── */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Risk Score Visual */}
-        <div className="bg-guardian-800/50 rounded-xl p-4 border border-guardian-700/30">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-3">
-            Composite Risk Score
-          </p>
-          <div className="flex items-end gap-3">
-            <span className={`text-4xl font-bold font-mono ${scoreColor.text}`}>
+      {/* Section 1: Overview grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {/* Risk Score */}
+        <div className="inner-block" style={{ padding: 16 }}>
+          <p className="eyebrow" style={{ marginBottom: 10 }}>Composite Risk Score</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 36, fontWeight: 700, color: getScoreColor(alert.risk_score || 0) }}>
               {alert.risk_score?.toFixed(1)}
             </span>
-            <span className="text-guardian-500 text-sm font-mono mb-1">/ 10.0</span>
+            <span style={{ fontSize: 13, color: '#9C9690' }}>/ 10.0</span>
           </div>
-          {/* Score bar */}
-          <div className="mt-3 h-2.5 bg-guardian-900 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${scoreColor.bar} transition-all duration-1000 ease-out shadow-lg ${scoreColor.glow}`}
-              style={{ width: `${Math.min((alert.risk_score || 0) * 10, 100)}%` }}
-            />
+          <div style={{ height: 8, borderRadius: 4, background: '#EFEDE8', overflow: 'hidden', marginTop: 10 }}>
+            <div style={{
+              height: '100%', borderRadius: 4,
+              width: `${Math.min((alert.risk_score || 0) * 10, 100)}%`,
+              background: getScoreColor(alert.risk_score || 0),
+              transition: 'width 0.5s',
+            }} />
           </div>
-          <div className="flex justify-between mt-1.5 text-[9px] text-guardian-600 font-mono">
-            <span>0 Safe</span>
-            <span>4 Medium</span>
-            <span>6 High</span>
-            <span>8 Critical</span>
-            <span>10</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 9, color: '#9C9690' }}>
+            <span>0 Safe</span><span>4 Medium</span><span>6 High</span><span>8+ Critical</span>
           </div>
         </div>
 
-        {/* Location & Timing */}
-        <div className="bg-guardian-800/50 rounded-xl p-4 border border-guardian-700/30">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-3">
-            Incident Location
-          </p>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Station</span>
-              <span className="text-[11px] font-semibold text-guardian-200">{platformInfo.station}</span>
+        {/* Location */}
+        <div className="inner-block" style={{ padding: 16 }}>
+          <p className="eyebrow" style={{ marginBottom: 10 }}>Incident Location</p>
+          {[
+            ['Station', platformInfo.station],
+            ['Platform', platformInfo.platform],
+            ['Zone', platformInfo.zone],
+            ['Camera', alert.camera_id],
+            ['Duration', `${formatDuration(alert.duration_seconds)} (${escalation.label})`],
+            ['Detected', alert.created_at ? new Date(alert.created_at).toLocaleString() : '—'],
+          ].map(([label, value]) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: '#9C9690' }}>{label}</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: '#1C1917' }}>{value}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Platform</span>
-              <span className="text-[11px] font-semibold text-guardian-200 bg-accent-cyan/10 text-accent-cyan px-2 py-0.5 rounded">
-                🚉 {platformInfo.platform}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Zone</span>
-              <span className="text-[11px] font-semibold text-guardian-200">{platformInfo.zone}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Camera</span>
-              <span className="text-[11px] font-mono text-guardian-300">{alert.camera_id}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Duration</span>
-              <span className={`text-[11px] font-semibold ${escalation.color}`}>
-                {formatDuration(alert.duration_seconds)} ({escalation.label})
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-guardian-400">Detected</span>
-              <span className="text-[11px] font-mono text-guardian-300">
-                {alert.created_at ? new Date(alert.created_at).toLocaleString() : '—'}
-              </span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Section 2: Guardian Recommendation ── */}
-      <div className={`rounded-xl p-4 border-l-4 ${
-        alert.risk_level === 'critical' ? 'border-l-red-500 bg-red-500/5' :
-        alert.risk_level === 'high' ? 'border-l-orange-500 bg-orange-500/5' :
-        'border-l-accent-cyan bg-accent-cyan/5'
-      }`}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-sm">🛡️</span>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-400">
-            Guardian AI Recommendation
-          </p>
-          <span className={`ml-auto text-[9px] font-bold uppercase px-2 py-0.5 rounded ${levelBadge}`}>
-            {alert.risk_level} Priority
-          </span>
+      {/* Section 2: Recommendation */}
+      <div style={{ borderLeft: '4px solid #C0392B', paddingLeft: 14, background: '#FDF6F5', borderRadius: '0 8px 8px 0', padding: '12px 14px 12px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span>🛡️</span>
+          <p className="eyebrow">Guardian AI Recommendation</p>
         </div>
-        <p className="text-guardian-200 text-sm leading-relaxed">
+        <p style={{ fontSize: 13, color: '#1C1917', lineHeight: 1.7, margin: 0 }}>
           {alert.recommendation}
         </p>
       </div>
 
-      {/* ── Section 3: SOP Reference ── */}
+      {/* Section 3: SOP Reference */}
       {alert.sop_clause && (
-        <div className="rounded-xl border border-accent-blue/20 overflow-hidden">
-          {/* SOP Header */}
-          <div className="bg-accent-blue/10 px-4 py-3 flex items-center justify-between border-b border-accent-blue/20">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">📋</span>
-              <span className="text-[11px] font-bold text-accent-blue uppercase tracking-wide">
+        <div style={{ border: '1px solid #DDD9D2', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#E6F1FB', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #D0E4F5' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>📋</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#185FA5', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 SOP Reference: {alert.sop_clause}
               </span>
             </div>
-            <span className="text-[9px] font-mono bg-accent-blue/20 text-accent-blue px-2 py-1 rounded-md border border-accent-blue/30">
+            <span style={{ fontSize: 9, fontFamily: "'SF Mono', monospace", background: 'white', color: '#185FA5', padding: '3px 6px', borderRadius: 4 }}>
               Indian Railways Safety Protocol
             </span>
           </div>
-
-          {/* SOP Text */}
-          <div className="p-4">
+          <div style={{ padding: 14 }}>
             {alert.sop_text && (
-              <div className="bg-guardian-800/30 rounded-lg p-3 mb-4 border border-guardian-700/30">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-1.5">
-                  Clause Text
-                </p>
-                <p className="text-guardian-200 text-[13px] leading-relaxed italic">
+              <div className="inner-block" style={{ marginBottom: 12 }}>
+                <p className="eyebrow" style={{ marginBottom: 4 }}>Clause Text</p>
+                <p style={{ fontSize: 12, color: '#6B6560', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
                   "{alert.sop_text}"
                 </p>
               </div>
             )}
-
-            {/* Action Items Checklist */}
             {SOP_ACTIONS[alert.sop_clause] && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-2.5 flex items-center gap-1.5">
-                  <span>✅</span> Required Response Actions
-                </p>
-                <div className="space-y-2">
+                <p className="eyebrow" style={{ marginBottom: 8 }}>✅ Required Response Actions</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {SOP_ACTIONS[alert.sop_clause].map((action, i) => (
-                    <div key={i} className="flex items-start gap-2.5 group">
-                      <div className="mt-0.5 w-5 h-5 rounded border border-accent-blue/40 bg-accent-blue/5 flex items-center justify-center shrink-0 group-hover:bg-accent-blue/20 transition-colors">
-                        <span className="text-[10px] font-bold text-accent-blue">{i + 1}</span>
-                      </div>
-                      <p className="text-[12px] text-guardian-300 leading-relaxed">{action}</p>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 4, border: '1px solid #D0E4F5',
+                        background: '#F0F7FD', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 600, color: '#185FA5', flexShrink: 0,
+                      }}>{i + 1}</div>
+                      <p style={{ fontSize: 12, color: '#1C1917', lineHeight: 1.5, margin: 0 }}>{action}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* SOP Compliance Info */}
-            <div className="mt-4 pt-3 border-t border-guardian-700/30 grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-1">Authority</p>
-                <p className="text-[11px] font-semibold text-guardian-300">RPF / Station Master</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-1">Response Time</p>
-                <p className="text-[11px] font-semibold text-amber-400">Immediate</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-1">Log Required</p>
-                <p className="text-[11px] font-semibold text-guardian-300">Within 10 min</p>
-              </div>
-            </div>
           </div>
         </div>
       )}
 
-      {/* If no SOP clause, show a note */}
       {!alert.sop_clause && (
-        <div className="rounded-xl border border-guardian-700/30 bg-guardian-800/30 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm">📋</span>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500">
-              SOP Reference
-            </p>
-          </div>
-          <p className="text-guardian-400 text-[12px]">
-            No specific SOP clause triggered for this risk level. SOPs are retrieved when composite risk score ≥ 4.0.
+        <div className="inner-block" style={{ padding: 14 }}>
+          <p className="eyebrow" style={{ marginBottom: 4 }}>📋 SOP Reference</p>
+          <p style={{ fontSize: 12, color: '#9C9690', margin: 0 }}>
+            No specific SOP clause triggered. SOPs are retrieved when composite risk ≥ 4.0.
           </p>
         </div>
       )}
 
-      {/* ── Section 4: Agent Analysis Breakdown ── */}
+      {/* Section 4: Agent Analysis */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-3 flex items-center gap-1.5">
-          <span>🤖</span> Agent Analysis Breakdown
-          <span className="ml-auto text-[9px] text-guardian-600 font-normal normal-case">
-            Weighted formula: (C×1.0 + S×2.0 + D×1.5) ÷ 4.5
+        <p className="eyebrow" style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
+          <span>🤖 Agent Analysis Breakdown</span>
+          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+            (C×1.0 + S×2.0 + D×1.5) ÷ 4.5
           </span>
         </p>
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {['crowd', 'security', 'distress'].map(k => {
             const data = alert.agent_outputs?.[k]
             const score = data?.risk_score ?? 0
             const cfg = AGENT_CONFIG[k]
-            const level = getRiskLevel(score)
-            const levelColor = SCORE_COLORS[level]
-
+            const sc = getScoreColor(score)
             return (
-              <div key={k} className="bg-guardian-800/50 rounded-xl p-4 border border-guardian-700/30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{cfg.icon}</span>
-                    <span className="text-[11px] font-semibold text-guardian-200">{cfg.label}</span>
-                    <span className="text-[9px] font-mono text-guardian-600 bg-guardian-700/50 px-1.5 py-0.5 rounded">
-                      weight: {cfg.weight}
+              <div key={k} className="inner-block" style={{ padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{cfg.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#1C1917' }}>{cfg.label}</span>
+                    <span style={{ fontSize: 9, color: '#9C9690', background: '#EFEDE8', padding: '1px 4px', borderRadius: 3 }}>
+                      {cfg.weight}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
                     {data?.escalation && (
-                      <span className="text-[9px] font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/30">
+                      <span style={{ fontSize: 9, fontWeight: 600, color: '#E67E22', background: '#FFF3E0', padding: '2px 6px', borderRadius: 10, marginRight: 4 }}>
                         ⚠ Escalating
                       </span>
                     )}
-                    <span className={`text-xl font-bold font-mono ${levelColor.text}`}>
-                      {score.toFixed(1)}
-                    </span>
-                    <span className="text-[10px] text-guardian-500 font-mono">/ 10</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: sc }}>{score.toFixed(1)}</span>
+                    <span style={{ fontSize: 10, color: '#9C9690' }}>/10</span>
                   </div>
                 </div>
-
-                {/* Score bar */}
-                <div className="h-2 bg-guardian-900 rounded-full overflow-hidden mb-2">
-                  <div
-                    className={`h-full rounded-full ${cfg.color} transition-all duration-1000 ease-out`}
-                    style={{ width: `${Math.min(score * 10, 100)}%` }}
-                  />
+                <div style={{ height: 5, borderRadius: 3, background: '#EFEDE8', overflow: 'hidden', marginBottom: 6 }}>
+                  <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(score * 10, 100)}%`, background: sc, transition: 'width 0.5s' }} />
                 </div>
-
-                {/* Finding */}
-                <p className="text-[11px] text-guardian-400 leading-relaxed">
+                <p style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5, margin: 0 }}>
                   {data?.finding ?? 'No data available'}
                 </p>
               </div>
@@ -462,83 +356,67 @@ export default function SOPCard({ alert }) {
         </div>
       </div>
 
-      {/* ── Section 5: Escalation Timeline ── */}
-      <div className="rounded-xl border border-guardian-700/30 bg-guardian-800/30 p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 mb-3 flex items-center gap-1.5">
-          <span>⏱</span> Temporal Escalation Status
-        </p>
-        <div className="flex items-center gap-1">
-          {/* Three-stage escalation bar */}
+      {/* Section 5: Escalation Timeline */}
+      <div className="inner-block" style={{ padding: 14 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>⏱ Temporal Escalation Status</p>
+        <div style={{ display: 'flex', gap: 3 }}>
           {[
-            { label: 'New (0-30s)', threshold: 30 },
-            { label: 'Persistent (30-120s)', threshold: 120 },
-            { label: 'Critical (>120s)', threshold: Infinity },
+            { label: 'New (0-30s)', threshold: 30, color: '#27AE60' },
+            { label: 'Persistent (30-120s)', threshold: 120, color: '#E67E22' },
+            { label: 'Critical (>120s)', threshold: Infinity, color: '#C0392B' },
           ].map((stage, i) => {
-            const duration = alert.duration_seconds || 0
-            const isActive = (i === 0 && duration < 30) || (i === 1 && duration >= 30 && duration <= 120) || (i === 2 && duration > 120)
-            const isPast = (i === 0 && duration >= 30) || (i === 1 && duration > 120)
+            const d = alert.duration_seconds || 0
+            const isActive = (i === 0 && d < 30) || (i === 1 && d >= 30 && d <= 120) || (i === 2 && d > 120)
+            const isPast = (i === 0 && d >= 30) || (i === 1 && d > 120)
             return (
-              <div key={i} className="flex-1">
-                <div className={`h-2 rounded-full transition-all duration-500 ${
-                  isActive ? (i === 2 ? 'bg-red-500 animate-pulse' : i === 1 ? 'bg-amber-500' : 'bg-emerald-500') :
-                  isPast ? (i === 0 ? 'bg-emerald-500/50' : 'bg-amber-500/50') :
-                  'bg-guardian-700'
-                }`} />
-                <p className={`text-[9px] mt-1 text-center ${isActive ? 'text-guardian-300 font-semibold' : 'text-guardian-600'}`}>
+              <div key={i} style={{ flex: 1 }}>
+                <div style={{
+                  height: 6, borderRadius: 3,
+                  background: isActive ? stage.color : isPast ? `${stage.color}60` : '#DDD9D2',
+                  transition: 'background 0.3s',
+                }} />
+                <p style={{ fontSize: 9, textAlign: 'center', marginTop: 3, color: isActive ? '#1C1917' : '#9C9690', fontWeight: isActive ? 600 : 400 }}>
                   {stage.label}
                 </p>
               </div>
             )
           })}
         </div>
-        <p className="text-[10px] text-guardian-500 mt-2 text-center font-mono">
-          Current: {formatDuration(alert.duration_seconds)} · Escalation Level: {escalation.level}/2 · Status: <span className={escalation.color}>{escalation.label}</span>
+        <p style={{ fontSize: 10, color: '#9C9690', textAlign: 'center', marginTop: 6 }}>
+          Current: {formatDuration(alert.duration_seconds)} · Level: {escalation.level}/2 · <span style={{ color: escalation.color }}>{escalation.label}</span>
         </p>
       </div>
 
-      {/* ── Section 6: Incident Frame ── */}
+      {/* Section 6: Frame */}
       {alert.frame_url && (
-        <div className="rounded-xl border border-guardian-700/30 overflow-hidden">
-          <div className="bg-guardian-800/50 px-4 py-2.5 border-b border-guardian-700/30">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-guardian-500 flex items-center gap-1.5">
-              <span>📸</span> Incident Frame Capture
-            </p>
+        <div style={{ border: '1px solid #DDD9D2', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#F7F4EF', padding: '8px 14px', borderBottom: '1px solid #DDD9D2' }}>
+            <p className="eyebrow">📸 Incident Frame Capture</p>
           </div>
-          <img
-            src={alert.frame_url}
-            alt="Incident frame capture"
-            className="w-full"
-          />
+          <img src={alert.frame_url} alt="Incident frame capture" style={{ width: '100%' }} />
         </div>
       )}
 
-      {/* ── Footer Metadata ── */}
-      <div className="bg-guardian-800/20 rounded-lg p-3 grid grid-cols-4 gap-3 text-center border border-guardian-700/20">
-        <div>
-          <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-0.5">Camera</p>
-          <p className="text-[11px] font-mono font-semibold text-guardian-300">{alert.camera_id}</p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-0.5">Platform</p>
-          <p className="text-[11px] font-mono font-semibold text-accent-cyan">{platformInfo.platform}</p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-0.5">Incident Type</p>
-          <p className="text-[11px] font-mono font-semibold text-guardian-300 uppercase">{alert.incident_type}</p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase tracking-widest text-guardian-600 mb-0.5">Resolved</p>
-          <p className={`text-[11px] font-semibold ${alert.resolved ? 'text-emerald-400' : 'text-red-400'}`}>
-            {alert.resolved ? '✓ Yes' : '✗ Active'}
-          </p>
-        </div>
+      {/* Footer grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+        {[
+          ['Camera', alert.camera_id],
+          ['Platform', platformInfo.platform],
+          ['Type', alert.incident_type?.toUpperCase()],
+          ['Status', alert.resolved ? '✓ Resolved' : '✗ Active'],
+        ].map(([label, value]) => (
+          <div key={label} className="inner-block" style={{ textAlign: 'center', padding: 8 }}>
+            <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#9C9690', marginBottom: 2 }}>{label}</p>
+            <p style={{ fontSize: 11, fontWeight: 600, color: '#1C1917', margin: 0 }}>{value}</p>
+          </div>
+        ))}
       </div>
     </div>
   )
 
   return (
     <DashboardCardModal
-      className={`glass rounded-xl border-2 ${borderColor} h-full group ${alert.risk_level === 'critical' ? 'scan-effect' : ''}`}
+      className="card h-full group"
       cardContent={cardFace}
       modalTitle={`Incident Report — ${alert.incident_type?.toUpperCase()} · ${platformInfo.platform} · Score ${alert.risk_score?.toFixed(1)}`}
       modalContent={modalBody}
