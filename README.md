@@ -156,6 +156,4 @@ Navigate to `http://localhost:5173`
     └── generate_demo_frames.py
 ```
 
-## 📄 License
 
-MIT — Built for Smart India Hackathon
